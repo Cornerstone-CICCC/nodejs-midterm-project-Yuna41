@@ -1,0 +1,242 @@
+---
+
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Life Updates</title>
+		<link rel="stylesheet" href="/global.css">
+	</head>
+	<body>
+		<div class="container my-page">
+			<div class="container-inner">
+				<section class="sec-head">
+					<div class="sec-head-ttl">
+						<div class="sec-head-acc">
+							<button id="btn-logout">
+								<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path d="M8.9999 8.77499C10.8646 8.77499 12.3749 7.26468 12.3749 5.39999C12.3749 3.53531 10.8646 2.02499 8.9999 2.02499C7.13521 2.02499 5.6249 3.53531 5.6249 5.39999C5.6249 7.26468 7.13521 8.77499 8.9999 8.77499ZM8.16459 10.35C5.39428 10.35 3.1499 12.5944 3.1499 15.3647C3.1499 15.8259 3.52396 16.2 3.98521 16.2H14.0146C14.4758 16.2 14.8499 15.8259 14.8499 15.3647C14.8499 12.5944 12.6055 10.35 9.83522 10.35H8.16459Z" fill="#667085"/>
+								</svg>
+								<span>Log Out</span>
+							</button>
+						</div>
+						<h1 class="sec-head-logo"><a href="/">Life Updates</a></h1>
+					</div>
+					<p>The latest travel, foods, fashion, studies and hobbies.</p>
+					<button id="btn-create">
+						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M11 4C11 3.44687 10.5531 3 10 3C9.44687 3 9 3.44687 9 4V9H4C3.44687 9 3 9.44687 3 10C3 10.5531 3.44687 11 4 11H9V16C9 16.5531 9.44687 17 10 17C10.5531 17 11 16.5531 11 16V11H16C16.5531 11 17 10.5531 17 10C17 9.44687 16.5531 9 16 9H11V4Z" fill="white"/>
+						</svg>
+						<span>New Post</span>
+					</button>
+					<div class="search-box">
+						<input type="text" name="keyword" placeholder="Search" class="search-input">
+					</div>
+				</section>
+				<ul id="list-posts"></ul>
+			</div>
+			<div id="modal" class="is-hidden">
+				<button id="modal-close">
+					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M11 4C11 3.44687 10.5531 3 10 3C9.44687 3 9 3.44687 9 4V9H4C3.44687 9 3 9.44687 3 10C3 10.5531 3.44687 11 4 11H9V16C9 16.5531 9.44687 17 10 17C10.5531 17 11 16.5531 11 16V11H16C16.5531 11 17 10.5531 17 10C17 9.44687 16.5531 9 16 9H11V4Z" fill="white"/>
+					</svg>
+				</button>
+				<div class="modal-inner">
+					<dl class="modal-edit">
+						<dt>Title</dt>
+						<dd><input type="text" id="modal-ttl"></dd>
+						<dt>Body</dt>
+						<dd><textarea id="modal-body"></textarea></dd>
+					</dl>
+					<div class="modal-btn">
+						<button id="modal-delete">
+							<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M25.4563 4.36875L26 6H32C33.1063 6 34 6.89375 34 8C34 9.10625 33.1063 10 32 10H8C6.89375 10 6 9.10625 6 8C6 6.89375 6.89375 6 8 6H14L14.5438 4.36875C14.8188 3.55 15.5813 3 16.4438 3H23.5562C24.4187 3 25.1813 3.55 25.4563 4.36875ZM8 13H32L30.6812 33.1937C30.5812 34.775 29.2687 36 27.6875 36H12.3125C10.7313 36 9.41875 34.775 9.31875 33.1937L8 13Z" fill="#D34E4E"/>
+							</svg>
+						</button>
+						<button id="modal-save">Save</button>
+					</div>
+				</div>
+			</div>
+			<div id="msg-popup"></div>
+		</div>
+    
+		<script>
+			// Popup
+			function msgPopup(message: string){
+				const popupMsg = document.getElementById('msg-popup') as HTMLDivElement
+				popupMsg.textContent = message
+				popupMsg.style.display = "block"
+
+				setTimeout(() => {
+					popupMsg.style.display = "none"
+				}, 3000)
+			}
+
+			// list post
+			const postList = document.getElementById('list-posts') as HTMLElement
+			interface Post {
+				id: string
+				title: string
+				body: string
+				date: Date
+			}
+
+			async function loadPosts(){
+				const res = await fetch("http://localhost:3500/posts/list", {
+					credentials: "include"
+				})
+				const posts = await res.json()
+				renderPosts(posts)
+			}
+			function renderPosts(posts: Post[]){
+				postList.innerHTML = ''
+				posts.forEach(p => {
+					const li = document.createElement('li')
+					li.dataset.id = p.id
+					li.dataset.title = p.title
+					li.dataset.body = p.body
+					li.innerHTML = `
+						<div class="post-txt">
+							<h3>${p.title}</h3>
+							<div>${p.body}</div>
+							<p>${new Date(p.date).toDateString()}</p>
+						</div>
+					`
+
+					li.addEventListener('click', () => {
+						openModal(p)
+					})
+					postList?.prepend(li)
+				})
+			}
+			loadPosts()
+
+			// Modal
+			const modal = document.getElementById('modal') as HTMLDivElement
+			const postTtl = document.getElementById('modal-ttl') as HTMLInputElement
+			const postBody = document.getElementById('modal-body') as HTMLTextAreaElement
+			const deleteBtn = document.getElementById('modal-delete') as HTMLButtonElement
+			let currentId: string | null = null
+			function openModal(post: Post){
+				currentId = post.id
+				postTtl.value = post.title
+				postBody.value = post.body
+				modal.classList.remove('is-hidden')
+			}
+			// Modal - close
+			document.getElementById('modal-close')?.addEventListener('click', () => {
+				modal.classList.add('is-hidden')
+				deleteBtn.style.display = 'block'
+			})
+			// Modal - add
+			document.getElementById('btn-create')?.addEventListener('click', () => {
+				currentId =  null
+				postTtl.value = ''
+				postBody.value = ''
+				modal.classList.remove('is-hidden')
+				deleteBtn.style.display = 'none'
+			})
+			// Modal - save
+			document.getElementById('modal-save')?.addEventListener('click', async () => {
+				const updated = {
+					title: postTtl.value,
+					body: postBody.value
+				}
+
+				if(!currentId){
+					try{
+						const res = await fetch("http://localhost:3500/posts/create", {
+							method: "POST",
+							credentials: "include",
+							headers: {
+								"Content-type": "application/json"
+							},
+							body: JSON.stringify(updated)
+						})
+						const data = await res.json()
+						if(!res.ok){
+							msgPopup(data.message)
+							return
+						}
+						modal.classList.add('is-hidden')
+						deleteBtn.style.display = 'block'
+						loadPosts()
+						msgPopup(data.message)
+						return
+					} catch(err){
+						console.error(err)
+					}
+				}
+
+				try{
+					const res = await fetch(`http://localhost:3500/posts/${currentId}`, {
+						method: "PUT",
+						credentials: "include",
+						headers: {
+							"Content-type": "application/json"
+						},
+						body: JSON.stringify({ id: currentId, ...updated })
+					})
+					const data = await res.json()
+					if(!res.ok){
+						msgPopup(data.message)
+						return
+					}
+					modal.classList.add('is-hidden')
+					loadPosts()
+					msgPopup(data.message)
+				} catch(err){
+					console.error(err)
+				}
+			})
+			// Modal - delete
+			document.getElementById('modal-delete')?.addEventListener('click', async () => {
+				try{
+					const res = await fetch(`http://localhost:3500/posts/${currentId}`, {
+						method: "DELETE",
+						credentials: "include"
+					})
+					const data = await res.json()
+					if(!res.ok){
+						msgPopup(data.message)
+						return
+					}
+					modal.classList.add('is-hidden')
+					loadPosts()
+					msgPopup(data.message)
+				} catch(err){
+					console.error(err)
+				}
+			})
+
+			// Search posts
+			const searchInput = document.querySelector('.search-input') as HTMLInputElement
+			searchInput.addEventListener('input', async () => {
+				const keyword = searchInput.value
+				const res = await fetch(`http://localhost:3500/posts/search?q=${keyword}`, {
+					credentials: "include"
+				})
+				const posts = await res.json()
+				renderPosts(posts)
+			})
+
+			// Log out
+			const btnLogout = document.getElementById('btn-logout') as HTMLButtonElement
+			btnLogout.addEventListener('click', async() => {
+				try{
+					await fetch("http://localhost:3500/users/logout", {
+						credentials: "include"
+					})
+					window.location.href = "/"
+				} catch(err) {
+					console.error(err)
+				} 
+			})
+		</script>
+  </body>
+</html>

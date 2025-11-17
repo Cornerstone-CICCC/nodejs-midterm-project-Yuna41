@@ -1,0 +1,142 @@
+---
+
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Life Updates</title>
+		<link rel="stylesheet" href="/global.css">
+	</head>
+	<body>
+		<div class="container">
+			<div class="container-inner">
+				<section class="sec-head">
+					<div class="sec-head-ttl">
+						<div class="sec-head-acc">
+							<a href="/user" id="login-link">
+								<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path d="M8.9999 8.77499C10.8646 8.77499 12.3749 7.26468 12.3749 5.39999C12.3749 3.53531 10.8646 2.02499 8.9999 2.02499C7.13521 2.02499 5.6249 3.53531 5.6249 5.39999C5.6249 7.26468 7.13521 8.77499 8.9999 8.77499ZM8.16459 10.35C5.39428 10.35 3.1499 12.5944 3.1499 15.3647C3.1499 15.8259 3.52396 16.2 3.98521 16.2H14.0146C14.4758 16.2 14.8499 15.8259 14.8499 15.3647C14.8499 12.5944 12.6055 10.35 9.83522 10.35H8.16459Z" fill="#667085"/>
+								</svg>
+								<span id="login-status"></span>
+							</a>
+						</div>
+						<h1 class="sec-head-logo"><a href="/">Life Updates</a></h1>
+					</div>
+					<p>The latest travel, foods, fashion, studies and hobbies.</p>
+					<div class="search-box">
+						<input type="text" name="keyword" placeholder="Search" class="search-input">
+					</div>
+				</section>
+				<ul id="list-posts"></ul>
+			</div>
+			<div id="modal" class="is-hidden">
+				<button id="modal-close">
+					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M11 4C11 3.44687 10.5531 3 10 3C9.44687 3 9 3.44687 9 4V9H4C3.44687 9 3 9.44687 3 10C3 10.5531 3.44687 11 4 11H9V16C9 16.5531 9.44687 17 10 17C10.5531 17 11 16.5531 11 16V11H16C16.5531 11 17 10.5531 17 10C17 9.44687 16.5531 9 16 9H11V4Z" fill="white"/>
+					</svg>
+				</button>
+				<div class="modal-inner">
+					<dl class="modal-post">
+						<dt id="modal-ttl"></dt>
+						<dd>
+							<div id="modal-body"></div>
+							<p id="modal-date"></p>
+						</dd>
+					</dl>
+				</div>
+			</div>
+		</div>
+    
+		<script>
+			// list post
+			const postList = document.getElementById('list-posts') as HTMLElement
+			interface Post {
+				id: string
+				title: string
+				body: string
+				date: Date
+			}
+
+			async function loadPosts(){
+				const res = await fetch("http://localhost:3500/posts/list", {
+					credentials: "include"
+				})
+				const posts = await res.json()
+				renderPosts(posts)
+			}
+			function renderPosts(posts: Post[]){
+				postList.innerHTML = ''
+				posts.forEach(p => {
+					const li = document.createElement('li')
+					li.dataset.id = p.id
+					li.dataset.title = p.title
+					li.dataset.body = p.body
+					li.innerHTML = `
+						<div class="post-txt">
+							<h3>${p.title}</h3>
+							<div>${p.body}</div>
+							<p>${new Date(p.date).toDateString()}</p>
+						</div>
+					`
+					li.addEventListener('click', () => {
+						openModal(p)
+					})
+
+					postList?.insertBefore(li, postList.firstElementChild)
+				})
+			}
+			loadPosts()
+
+			async function checkAuth(){
+				const res = await fetch("http://localhost:3500/users/check-auth", {
+					method: "GET",
+					credentials: "include"
+				})
+				const accName = document.getElementById('login-status') as HTMLSpanElement
+				const accLink = document.getElementById('login-link') as HTMLAnchorElement
+				if(res.ok){
+					const user = await res.json()
+					accName.textContent = user.username
+					accLink.setAttribute('href', '/posts')
+				} else {
+					accName.textContent = "Log in"
+					accLink.setAttribute('href', '/user')
+				}
+			}
+			checkAuth()
+
+			// Modal
+			const modal = document.getElementById('modal') as HTMLDivElement
+			const postTtl = document.getElementById('modal-ttl') as HTMLElement
+			const postBody = document.getElementById('modal-body') as HTMLElement
+			const postDate = document.getElementById('modal-date') as HTMLElement
+			let currentId = null
+			function openModal(post: Post){
+				currentId = post.id
+				postTtl.textContent = post.title
+				postBody.textContent = post.body
+				postDate.textContent = new Date(post.date).toDateString()
+				modal.classList.remove('is-hidden')
+			}
+			document.getElementById('modal-close')?.addEventListener('click', () => {
+				modal.classList.add('is-hidden')
+			})
+
+			// Search posts
+			const searchInput = document.querySelector('.search-input') as HTMLInputElement
+			searchInput.addEventListener('change', async () => {
+				const keyword = searchInput.value
+				const res = await fetch(`http://localhost:3500/posts/search?q=${keyword}`, {
+					credentials: "include"
+				})
+				const posts = await res.json()
+				renderPosts(posts)
+			})
+		</script>
+  </body>
+</html>
+
